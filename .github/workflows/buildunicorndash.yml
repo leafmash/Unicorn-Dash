@@ -1,4 +1,4 @@
-name: Build from drop folder
+name: Build UnicornDash Game
 
 on:
   push:
@@ -57,29 +57,34 @@ jobs:
         env:
           KEYSTORE_B64: ${{ secrets.DEBUG_KEYSTORE_BASE64 }}
         run: |
-          mkdir -v -p ~/.local/share/godot/export_templates/
-          mkdir -v -p ~/.config/godot
-          mv /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable || true
+          export HOME=/root
+          mkdir -p /root/.config/godot
+          ls /root/.local/share/godot/export_templates/
           if [ -n "$KEYSTORE_B64" ]; then
             echo "$KEYSTORE_B64" | base64 -d > /root/debug.keystore
           else
-            keytool -keyalg RSA -genkeypair -alias androiddebugkey -keypass android -keystore debug.keystore -storepass android -dname "CN=Android Debug,O=Android,C=US" -validity 9999 -deststoretype pkcs12
-            mv debug.keystore /root/debug.keystore
+            keytool -keyalg RSA -genkeypair -alias androiddebugkey -keypass android -keystore /root/debug.keystore -storepass android -dname "CN=Android Debug,O=Android,C=US" -validity 9999 -deststoretype pkcs12
           fi
-          godot -v -e --quit --headless
-          echo '[gd_resource type="EditorSettings" format=3]' > ~/.config/godot/editor_settings-4.tres
-          echo '[resource]' >> ~/.config/godot/editor_settings-4.tres
-          echo 'export/android/android_sdk_path = "/usr/lib/android-sdk"' >> ~/.config/godot/editor_settings-4.tres
-          echo 'export/android/debug_keystore = "/root/debug.keystore"' >> ~/.config/godot/editor_settings-4.tres
-          echo 'export/android/debug_keystore_user = "androiddebugkey"' >> ~/.config/godot/editor_settings-4.tres
-          echo 'export/android/debug_keystore_pass = "android"' >> ~/.config/godot/editor_settings-4.tres
-          echo 'export/android/force_system_user = false' >> ~/.config/godot/editor_settings-4.tres
-          echo 'export/android/timestamping_authority_url = ""' >> ~/.config/godot/editor_settings-4.tres
-          echo 'export/android/shutdown_adb_on_exit = true' >> ~/.config/godot/editor_settings-4.tres
+          JAVA_DIR=$(dirname "$(dirname "$(readlink -f "$(which javac)")")")
+          echo "Java at $JAVA_DIR"
+          for NAME in editor_settings-4.3.tres editor_settings-4.tres; do
+            F=/root/.config/godot/$NAME
+            echo '[gd_resource type="EditorSettings" format=3]' > $F
+            echo '[resource]' >> $F
+            echo 'export/android/android_sdk_path = "/usr/lib/android-sdk"' >> $F
+            echo "export/android/java_sdk_path = \"$JAVA_DIR\"" >> $F
+            echo 'export/android/debug_keystore = "/root/debug.keystore"' >> $F
+            echo 'export/android/debug_keystore_user = "androiddebugkey"' >> $F
+            echo 'export/android/debug_keystore_pass = "android"' >> $F
+            echo 'export/android/force_system_user = false' >> $F
+            echo 'export/android/shutdown_adb_on_exit = true' >> $F
+          done
+          cat /root/.config/godot/editor_settings-4.3.tres
 
       - name: Import and export APK
         working-directory: ${{ steps.find.outputs.dir }}
         run: |
+          export HOME=/root
           godot --headless --import || true
           mkdir -v -p build/android
           godot --headless --verbose --export-debug "Android" build/android/UnicornDash.apk
