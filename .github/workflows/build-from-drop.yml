@@ -1,4 +1,4 @@
-name: Build UnicornDash Game
+name: Build from drop folder
 
 on:
   push:
@@ -62,6 +62,8 @@ jobs:
           ls /root/.local/share/godot/export_templates/
           if [ -n "$KEYSTORE_B64" ]; then
             echo "$KEYSTORE_B64" | base64 -d > /root/debug.keystore
+          elif [ -f /root/debug.keystore ]; then
+            echo "Using existing debug keystore"
           else
             keytool -keyalg RSA -genkeypair -alias androiddebugkey -keypass android -keystore /root/debug.keystore -storepass android -dname "CN=Android Debug,O=Android,C=US" -validity 9999 -deststoretype pkcs12
           fi
