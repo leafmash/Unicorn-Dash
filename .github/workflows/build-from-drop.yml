@@ -48,6 +48,13 @@ jobs:
             exit 1
           fi
           DIR=$(dirname "$PROJ")
+          if ! grep -q 'import_etc2_astc' "$DIR/project.godot"; then
+            if grep -q '^\[rendering\]' "$DIR/project.godot"; then
+              sed -i '/^\[rendering\]/a textures/vram_compression/import_etc2_astc=true' "$DIR/project.godot"
+            else
+              printf '\n[rendering]\ntextures/vram_compression/import_etc2_astc=true\n' >> "$DIR/project.godot"
+            fi
+          fi
           if [ ! -f "$DIR/export_presets.cfg" ]; then
             cp .github/default_export_presets.cfg "$DIR/export_presets.cfg"
           fi
